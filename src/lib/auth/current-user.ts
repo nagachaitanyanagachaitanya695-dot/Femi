@@ -50,7 +50,17 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const profile = await getStore().getProfile(user.id);
+    // Reading the profile needs the service-role key. If it is missing or the
+    // database is unreachable, fall back to the verified session rather than
+    // throwing — the visitor stays signed in with the *lowest* privilege the
+    // environment allows, so a failure here can never grant admin by accident.
+    let profile: UserProfile | null = null;
+    try {
+      profile = await getStore().getProfile(user.id);
+    } catch (error) {
+      console.error("[femi][auth] could not load profile:", error);
+    }
+
     const email = user.email ?? profile?.email ?? "";
     return {
       id: user.id,

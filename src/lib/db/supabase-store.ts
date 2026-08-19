@@ -23,6 +23,19 @@ import type { Store } from "./types";
 
 type Row = Record<string, unknown>;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Orders are addressable by two different things: the uuid primary key (used
+ * by the admin dashboard) and the human-readable reference like FEMI-8KQ2M4
+ * (used in the customer's confirmation URL). Postgres will not compare a
+ * reference against a uuid column — it raises `invalid input syntax for type
+ * uuid` — so the column has to be chosen from the shape of the value.
+ */
+function orderColumn(identifier: string): "id" | "reference" {
+  return UUID_RE.test(identifier) ? "id" : "reference";
+}
+
 function client(): SupabaseClient {
   const admin = getSupabaseAdminClient();
   if (!admin) {
@@ -204,11 +217,13 @@ export const supabaseStore: Store = {
     return toOrder(data);
   },
 
-  async getOrder(id) {
+  async getOrder(identifier) {
+    // eq() is also safer than interpolating into .or(), which would let a
+    // crafted path segment inject extra PostgREST filter syntax.
     const { data, error } = await client()
       .from("orders")
       .select("*")
-      .or(`id.eq.${id},reference.eq.${id}`)
+      .eq(orderColumn(identifier), identifier)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? toOrder(data) : null;
@@ -242,7 +257,7 @@ export const supabaseStore: Store = {
     const { data, error } = await client()
       .from("orders")
       .update(update)
-      .eq("id", id)
+      .eq(orderColumn(id), id)
       .select()
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -301,7 +316,9 @@ export const supabaseStore: Store = {
       state: address.state,
       pincode: address.pincode,
     };
-    if (address.id) row.id = address.id;
+    // Only trust an id that is actually a uuid; anything else is treated as a
+    // new address rather than a failed update.
+    if (address.id && UUID_RE.test(address.id)) row.id = address.id;
 
     const { data, error } = await client().from("addresses").upsert(row).select().single();
     if (error) throw new Error(error.message);
@@ -309,6 +326,9 @@ export const supabaseStore: Store = {
   },
 
   async deleteAddress(userId, addressId) {
+    // A non-uuid would raise a cast error; treat it as "nothing to delete".
+    if (!UUID_RE.test(addressId)) return;
+
     const { error } = await client()
       .from("addresses")
       .delete()
