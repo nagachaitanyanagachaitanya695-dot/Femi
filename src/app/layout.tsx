@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 
 import { Footer } from "@/components/layout/Footer";
-import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Navbar } from "@/components/layout/Navbar";
+import { StoreChrome } from "@/components/layout/StoreChrome";
 import { SiteProviders } from "@/components/providers/SiteProviders";
 import { site } from "@/lib/site";
 
@@ -57,12 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           >
             Skip to content
           </a>
-          <Navbar />
-          <main id="main" className="pb-20 md:pb-0">
+          <StoreChrome header={<Navbar />} footer={<Footer />}>
             {children}
-          </main>
-          <Footer />
-          <MobileTabBar />
+          </StoreChrome>
         </SiteProviders>
       </body>
     </html>
