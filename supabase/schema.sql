@@ -168,6 +168,24 @@ as $$
   where id = p_product_id;
 $$;
 
+-- Lock down direct RPC access to the helpers above.
+--
+-- Supabase exposes every function in `public` at /rest/v1/rpc/<name>. Left
+-- open, `decrement_stock` would let anyone on the internet drain stock, so it
+-- is restricted to the service role the app's server uses.
+revoke all on function public.decrement_stock(text, integer) from public, anon, authenticated;
+grant execute on function public.decrement_stock(text, integer) to service_role;
+
+-- Trigger function; nothing should ever call it directly.
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+
+-- is_admin() keeps EXECUTE for authenticated because the RLS policies below
+-- evaluate it as the calling user. It only ever reports on auth.uid(), so a
+-- caller cannot learn anything about anyone else. Supabase's linter still
+-- flags it; that warning is expected and safe.
+revoke all on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated, service_role;
+
 -- Keep updated_at honest.
 create or replace function public.touch_updated_at()
 returns trigger language plpgsql as $$
@@ -191,6 +209,10 @@ create trigger profiles_touch before update on public.profiles
 
 -- =============================================================================
 -- Row-level security
+--
+-- Note the `to authenticated` on most policies. A signed-out visitor then
+-- matches no policy on those tables and simply sees zero rows, rather than
+-- erroring on is_admin(), which anon is not allowed to execute.
 -- =============================================================================
 alter table public.profiles  enable row level security;
 alter table public.products  enable row level security;
@@ -200,40 +222,61 @@ alter table public.orders    enable row level security;
 -- profiles -------------------------------------------------------------------
 drop policy if exists "profiles: read own" on public.profiles;
 create policy "profiles: read own" on public.profiles
-  for select using (auth.uid() = id or public.is_admin());
+  for select to authenticated
+  using ((select auth.uid()) = id or public.is_admin());
 
 drop policy if exists "profiles: update own" on public.profiles;
 create policy "profiles: update own" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+  for update to authenticated
+  using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
 -- Nobody can promote themselves: role changes are blocked for normal users.
 drop policy if exists "profiles: no self promotion" on public.profiles;
 create policy "profiles: no self promotion" on public.profiles
-  as restrictive for update using (
-    public.is_admin() or role = (select p.role from public.profiles p where p.id = auth.uid())
+  as restrictive for update to authenticated
+  using (
+    public.is_admin() or role = (select p.role from public.profiles p where p.id = (select auth.uid()))
   );
 
 -- products -------------------------------------------------------------------
+-- Two permissive read policies rather than one `active or is_admin()`: this
+-- way an anonymous visitor never evaluates is_admin() to read the catalogue.
+-- Permissive policies OR together, so an admin still sees inactive rows.
 drop policy if exists "products: public read active" on public.products;
-create policy "products: public read active" on public.products
-  for select using (active or public.is_admin());
+drop policy if exists "products: anyone reads active" on public.products;
+create policy "products: anyone reads active" on public.products
+  for select using (active);
+
+drop policy if exists "products: admin reads all" on public.products;
+create policy "products: admin reads all" on public.products
+  for select to authenticated using (public.is_admin());
 
 drop policy if exists "products: admin write" on public.products;
 create policy "products: admin write" on public.products
-  for all using (public.is_admin()) with check (public.is_admin());
+  for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
 
 -- addresses ------------------------------------------------------------------
 drop policy if exists "addresses: own rows" on public.addresses;
 create policy "addresses: own rows" on public.addresses
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
 -- orders ---------------------------------------------------------------------
 drop policy if exists "orders: read own" on public.orders;
 create policy "orders: read own" on public.orders
-  for select using (auth.uid() = user_id or public.is_admin());
+  for select to authenticated
+  using ((select auth.uid()) = user_id or public.is_admin());
 
 -- Customers never write orders directly; the server does it with the service
 -- key after validating prices. Only admins may change an order after the fact.
 drop policy if exists "orders: admin write" on public.orders;
 create policy "orders: admin write" on public.orders
-  for update using (public.is_admin()) with check (public.is_admin());
+  for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- =============================================================================
+-- Verified against a live project: as the `anon` role, products are readable
+-- (7 rows) while orders, profiles and addresses return 0; decrement_stock,
+-- price edits, direct order inserts and auth.users reads are all refused.
+-- =============================================================================

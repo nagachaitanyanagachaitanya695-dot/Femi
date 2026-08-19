@@ -2,18 +2,23 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { getSupabaseAdminClient } from "../supabase/server";
+import { getSupabaseAdminClient, getSupabasePublicClient } from "../supabase/server";
 import type { Address, Order, Product, UserProfile } from "../types";
 import type { Store } from "./types";
 
 /**
  * Supabase-backed store.
  *
- * All calls here run through the service-role client, which bypasses RLS — so
- * every entry point that reaches this module must have already established who
- * the caller is and whether they may do what they are asking. RLS in
- * supabase/schema.sql is the second line of defence for anything that talks to
- * the database directly from the browser.
+ * Two clients, chosen by what the call actually needs:
+ *
+ *  - `client()` uses the service role and bypasses RLS, so every entry point
+ *    that reaches it must already have established who the caller is and
+ *    whether they may do what they are asking. RLS in supabase/schema.sql is
+ *    the second line of defence.
+ *  - `reader()` prefers the service role but falls back to the anonymous
+ *    client, which RLS limits to active products. That means the storefront
+ *    browses and prices carts with only the publishable key configured; the
+ *    service-role key is needed the moment someone places an order.
  */
 
 type Row = Record<string, unknown>;
@@ -22,10 +27,20 @@ function client(): SupabaseClient {
   const admin = getSupabaseAdminClient();
   if (!admin) {
     throw new Error(
-      "Supabase is configured but SUPABASE_SERVICE_ROLE_KEY is missing. Add it to your server environment.",
+      "SUPABASE_SERVICE_ROLE_KEY is missing. Add it to your server environment — " +
+        "orders and admin actions cannot run without it.",
     );
   }
   return admin;
+}
+
+function reader(): SupabaseClient {
+  const admin = getSupabaseAdminClient();
+  if (admin) return admin;
+
+  const anon = getSupabasePublicClient();
+  if (!anon) throw new Error("Supabase is not configured.");
+  return anon;
 }
 
 function toProduct(row: Row): Product {
@@ -141,7 +156,9 @@ export const supabaseStore: Store = {
   kind: "supabase",
 
   async listProducts({ includeInactive = false } = {}) {
-    let query = client().from("products").select("*").order("popularity", { ascending: false });
+    // Without the service key this sees only active rows, which is exactly
+    // what `includeInactive: false` asks for anyway.
+    let query = reader().from("products").select("*").order("popularity", { ascending: false });
     if (!includeInactive) query = query.eq("active", true);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
@@ -149,13 +166,13 @@ export const supabaseStore: Store = {
   },
 
   async getProductById(id) {
-    const { data, error } = await client().from("products").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await reader().from("products").select("*").eq("id", id).maybeSingle();
     if (error) throw new Error(error.message);
     return data ? toProduct(data) : null;
   },
 
   async getProductBySlug(slug) {
-    const { data, error } = await client().from("products").select("*").eq("slug", slug).maybeSingle();
+    const { data, error } = await reader().from("products").select("*").eq("slug", slug).maybeSingle();
     if (error) throw new Error(error.message);
     return data ? toProduct(data) : null;
   },

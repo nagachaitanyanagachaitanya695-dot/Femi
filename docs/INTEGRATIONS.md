@@ -4,6 +4,16 @@ How to swap the development pieces for production services.
 
 ## Supabase
 
+### If your project is already provisioned
+
+The schema, RLS policies and sample catalogue may already be applied — check
+**Table editor** for `products`, `orders`, `profiles` and `addresses`. If they
+are there, you only need to add the three keys to your environment (below) and
+paste the service-role key, which is the one value that cannot be read
+programmatically.
+
+### From scratch
+
 1. Create a project at [supabase.com](https://supabase.com).
 2. In the SQL editor run `supabase/schema.sql`, then `supabase/seed.sql`.
 3. **Project Settings → API** gives you three values:
@@ -18,6 +28,12 @@ How to swap the development pieces for production services.
    then restart. The app detects Supabase automatically: `getStore()` switches
    from the file store to the Supabase store, and `/api/auth/*` starts
    delegating to Supabase Auth.
+
+   The URL and anon key alone are enough to browse the catalogue and price a
+   cart — RLS lets the anonymous role read active products. The service-role
+   key is required the moment someone places an order or opens the admin
+   dashboard, because those writes deliberately bypass RLS only after the
+   server has checked who is asking.
 5. Make yourself an admin:
 
    ```sql

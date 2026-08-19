@@ -34,6 +34,20 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
 }
 
 /**
+ * Anonymous client, with no session attached.
+ *
+ * Subject to row-level security as the `anon` role, which the schema allows to
+ * read active products and nothing else. Used for public catalogue reads so a
+ * store can browse and price a cart with only the publishable key configured.
+ */
+export function getSupabasePublicClient(): SupabaseClient | null {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+/**
  * Service-role client. Bypasses row-level security, so it is used only after
  * the caller's identity and role have already been checked in our own code —
  * writing orders, and admin catalogue/order management.
