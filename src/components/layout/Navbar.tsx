@@ -69,7 +69,7 @@ export function Navbar() {
           </span>
         </button>
 
-        <Logo />
+        <Logo priority />
 
         <nav aria-label="Primary" className="ml-6 hidden items-center gap-1 lg:flex">
           {LINKS.map((link) => (

@@ -109,6 +109,20 @@ body {
   }
 }
 
+/*
+ * Painted before React mounts, so the first frame of a visit is the intro's
+ * backdrop rather than a flash of the homepage. The inline script in the
+ * layout sets and clears the attribute, and clears it on a timer if the app
+ * never boots — the page must never stay covered.
+ */
+html[data-intro="1"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: #0e0508;
+}
+
 .skeleton {
   background: linear-gradient(
     90deg,

@@ -1,25 +1,42 @@
 import Link from "next/link";
 
-/** The Femi wordmark: a soft italic serif "Femi" beside the circular 9 mark. */
+/**
+ * The Femi 9 brand mark.
+ *
+ * Traced from the brand's own product film, so the script wordmark and the
+ * stylised 9 match the packaging exactly. Two colour variants ship rather than
+ * one tinted file: a plain <img> is cached, needs no CSS mask support, and
+ * cannot fail to a coloured rectangle on an old browser.
+ */
 export function Logo({
   className = "",
   tone = "default",
+  priority = false,
 }: {
   className?: string;
   tone?: "default" | "light";
+  priority?: boolean;
 }) {
-  const ink = tone === "light" ? "text-white" : "text-femi-600";
-  const mark = tone === "light" ? "bg-white text-femi-600" : "bg-femi-500 text-white";
+  const src = tone === "light" ? "/brand/femi-logo-light.svg" : "/brand/femi-logo.svg";
 
   return (
-    <Link href="/" className={`focus-ring inline-flex items-center gap-2 ${className}`} aria-label="Femi — home">
-      <span className={`font-display text-2xl leading-none font-bold italic ${ink}`}>Femi</span>
-      <span
-        aria-hidden
-        className={`grid size-6 place-items-center rounded-full text-xs font-bold ${mark}`}
-      >
-        9
-      </span>
+    <Link
+      href="/"
+      className={`focus-ring inline-flex items-center ${className}`}
+      aria-label="Femi 9 — home"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG needs
+          no optimisation pipeline, and next/image would only add a request. */}
+      <img
+        src={src}
+        alt="Femi 9"
+        width={499}
+        height={200}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        className="h-8 w-auto sm:h-9"
+        draggable={false}
+      />
     </Link>
   );
 }

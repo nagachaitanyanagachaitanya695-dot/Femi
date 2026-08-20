@@ -4,6 +4,7 @@ import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { StoreChrome } from "@/components/layout/StoreChrome";
+import { IntroVideo } from "@/components/intro/IntroVideo";
 import { SiteProviders } from "@/components/providers/SiteProviders";
 import { site } from "@/lib/site";
 import { getSiteUrl } from "@/lib/site-url";
@@ -50,7 +51,28 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-IN" className={`${display.variable} ${body.variable}`}>
+      <head>
+        {/*
+          Decides before first paint whether the intro is going to play, so a
+          returning visitor never sees it flash. The timeout is the safety
+          net: if the app fails to boot, the cover clears itself and the shop
+          is still usable.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{
+              var seen=sessionStorage.getItem('femi.intro.seen')==='1';
+              var still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+              if(!seen&&!still){
+                document.documentElement.setAttribute('data-intro','1');
+                setTimeout(function(){document.documentElement.removeAttribute('data-intro')},4000);
+              }
+            }catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-dvh antialiased">
+        <IntroVideo />
         <SiteProviders>
           <a
             href="#main"

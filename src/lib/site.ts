@@ -49,6 +49,41 @@ export const site = {
     etaDays: "3-6 business days",
   },
 
+  /**
+   * Opening product film.
+   *
+   * `src` chooses which cut is served:
+   *   /intro/femi-intro.mp4        full 10s, includes the anion / FAR-IR /
+   *                                nano-silver claim cards
+   *   /intro/femi-intro-clean.mp4  7.5s, same film with the claim segment
+   *                                removed
+   *
+   * Set `enabled: false` to turn the intro off entirely.
+   */
+  intro: {
+    enabled: true,
+    /**
+     * Which cut to play. Change this one line to switch:
+     *   "femi-intro"        full 10s, includes the anion / FAR-IR /
+     *                       nano-silver claim cards
+     *   "femi-intro-clean"  7.5s, the same film with the claim segment removed
+     */
+    file: "femi-intro",
+    poster: "/intro/femi-intro-poster.jpg",
+    /**
+     * Both containers ship. Safari and iOS need the MP4; some Linux Chromium
+     * and Firefox builds have no H.264 at all and fall through to the WebM.
+     */
+    get sources() {
+      return [
+        { src: `/intro/${this.file}.mp4`, type: "video/mp4" },
+        { src: `/intro/${this.file}.webm`, type: "video/webm" },
+      ];
+    },
+    /** Hard stop, so a stalled video can never block the shop. */
+    maxDurationMs: 12_000,
+  },
+
   currency: "INR",
   countryCode: "IN",
 
