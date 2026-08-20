@@ -6,6 +6,10 @@
  * build can be re-pointed at a different number / inbox without a code change.
  */
 
+import { envText, normaliseWhatsappNumber } from "./env";
+
+const DEFAULT_WHATSAPP = "919676877257";
+
 export const site = {
   name: "Femi",
   tagline: "Period care made simple.",
@@ -17,7 +21,10 @@ export const site = {
    * digits only — no +, no spaces). India = 91 + 10-digit number.
    * To change it: set NEXT_PUBLIC_WHATSAPP_NUMBER, or edit the fallback below.
    */
-  whatsappNumber: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919676877257").replace(/\D/g, ""),
+  whatsappNumber: normaliseWhatsappNumber(
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
+    DEFAULT_WHATSAPP,
+  ),
 
   /** Human-readable version of the same number, used in the UI. */
   get whatsappDisplay() {
@@ -25,7 +32,7 @@ export const site = {
     return n.startsWith("91") ? `+91 ${n.slice(2, 7)} ${n.slice(7)}` : `+${n}`;
   },
 
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "zubimoosa0813@gmail.com",
+  supportEmail: envText(process.env.NEXT_PUBLIC_SUPPORT_EMAIL, "zubimoosa0813@gmail.com"),
 
   /** Courier partner used for all shipments. */
   courier: {

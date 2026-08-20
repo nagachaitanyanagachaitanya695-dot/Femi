@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import { products as seedProducts } from "../catalog";
+import { envText } from "../env";
 import type { Address, Order, OrderStatus, Product, UserProfile } from "../types";
 import type { CredentialStore, OtpRecord, Store, UserRecord } from "./types";
 
@@ -24,7 +25,7 @@ interface DbShape {
   otps: OtpRecord[];
 }
 
-const DATA_DIR = process.env.FEMI_DATA_DIR ?? path.join(process.cwd(), ".data");
+const DATA_DIR = envText(process.env.FEMI_DATA_DIR, path.join(process.cwd(), ".data"));
 const DATA_FILE = path.join(DATA_DIR, "femi-db.json");
 
 function emptyDb(): DbShape {
