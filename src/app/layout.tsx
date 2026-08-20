@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { StoreChrome } from "@/components/layout/StoreChrome";
 import { SiteProviders } from "@/components/providers/SiteProviders";
 import { site } from "@/lib/site";
+import { getSiteUrl } from "@/lib/site-url";
 
 import "./globals.css";
 
@@ -23,7 +24,7 @@ const body = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: `${site.name} — ${site.tagline}`,
     template: `%s · ${site.name}`,
