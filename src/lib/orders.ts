@@ -37,7 +37,7 @@ export class OrderError extends Error {
  * catalogue the server loaded, and stock is checked before anything is stored.
  */
 export async function createOrder(
-  user: AuthUser,
+  user: AuthUser | null,
   cart: CartLine[],
   details: CheckoutInput,
 ): Promise<Order> {
@@ -64,7 +64,9 @@ export async function createOrder(
   const order: Order = {
     id: randomUUID(),
     reference: generateOrderReference(),
-    userId: user.id,
+    // Null for a guest. Their order is linked to their account later, if they
+    // ever create one with the same email.
+    userId: user?.id ?? null,
     status: "pending",
     customerName: details.fullName,
     mobile: details.mobile,

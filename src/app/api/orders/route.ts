@@ -1,5 +1,6 @@
 import { fail, handler, json, readJson } from "@/lib/api";
-import { requireUser } from "@/lib/auth/current-user";
+import { getCurrentUser, requireUser } from "@/lib/auth/current-user";
+import { grantOrderAccess } from "@/lib/auth/order-access";
 import { getStore } from "@/lib/db";
 import { OrderError, createOrder } from "@/lib/orders";
 import { clampQty } from "@/lib/pricing";
@@ -17,11 +18,17 @@ export const GET = handler(async () => {
   return json({ orders });
 });
 
-/** Place an order. Authentication is required — this is the checkout gate. */
+/**
+ * Place an order. Guests are allowed: an account is optional, and a signed-in
+ * customer simply gets the order attached to their account.
+ */
 export const POST = handler(async (request) => {
-  const user = await requireUser();
+  const user = await getCurrentUser();
 
-  const limit = rateLimit(clientKey(request, `order:${user.id}`), 10, 10 * 60 * 1000);
+  // Guests get a tighter limit, since the only thing identifying them is an IP.
+  const limit = user
+    ? rateLimit(clientKey(request, `order:${user.id}`), 10, 10 * 60 * 1000)
+    : rateLimit(clientKey(request, "order:guest"), 5, 10 * 60 * 1000);
   if (!limit.ok) return fail("Too many orders in a short time. Please try again shortly.", 429);
 
   const body = await readJson(request);
@@ -44,6 +51,11 @@ export const POST = handler(async (request) => {
 
   try {
     const order = await createOrder(user, cart, value);
+
+    // Let this browser read the confirmation page for the order it just
+    // created — the only way a guest can see it.
+    await grantOrderAccess(order.id, order.reference);
+
     return json(
       {
         order,

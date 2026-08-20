@@ -42,6 +42,12 @@ export interface Store {
     id: string,
     patch: { status?: OrderStatus; trackingId?: string | null },
   ): Promise<Order | null>;
+  /**
+   * Attaches guest orders (user_id null) placed with this email to an account.
+   * Called when someone signs up or signs in, so their earlier orders show up
+   * in their history without an account ever being created on their behalf.
+   */
+  claimOrdersByEmail(userId: string, email: string): Promise<number>;
 
   /* ---- profiles + addresses ---- */
   getProfile(userId: string): Promise<UserProfile | null>;

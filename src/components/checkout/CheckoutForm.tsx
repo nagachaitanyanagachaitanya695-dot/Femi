@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -34,7 +35,7 @@ export function CheckoutForm({
   user,
   savedAddresses,
 }: {
-  user: AuthUser;
+  user: AuthUser | null;
   savedAddresses: Address[];
 }) {
   const { items, lines, totals, ready, pricing, clear } = useCart();
@@ -42,9 +43,9 @@ export function CheckoutForm({
   const router = useRouter();
 
   const [form, setForm] = useState<FormState>({
-    fullName: user.fullName ?? "",
-    mobile: user.mobile ?? "",
-    email: user.email ?? "",
+    fullName: user?.fullName ?? "",
+    mobile: user?.mobile ?? "",
+    email: user?.email ?? "",
     line1: "",
     line2: "",
     city: "",
@@ -108,7 +109,7 @@ export function CheckoutForm({
         return;
       }
 
-      if (saveAddress) {
+      if (saveAddress && user) {
         // Best effort — a failure here must not block the order.
         void fetch("/api/account/addresses", {
           method: "POST",
@@ -153,6 +154,20 @@ export function CheckoutForm({
     <form onSubmit={placeOrder} className="grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start" noValidate>
       <div className="grid gap-6">
         <FormError message={error} />
+
+        {!user && (
+          <p className="rounded-card border border-femi-100 bg-femi-50 px-5 py-4 text-sm leading-relaxed text-ink-soft">
+            You&apos;re ordering as a guest — no account needed.{" "}
+            <Link
+              href="/login?next=/checkout"
+              className="focus-ring font-semibold text-femi-600 underline"
+            >
+              Sign in instead
+            </Link>{" "}
+            to use a saved address and keep your order history. If you create an account later with
+            this email, this order will appear in it.
+          </p>
+        )}
 
         <section className="rounded-card border border-femi-100 bg-white p-5 sm:p-6">
           <h2 className="font-display text-xl text-ink">Customer details</h2>
@@ -332,15 +347,17 @@ export function CheckoutForm({
             </div>
           </div>
 
-          <label className="mt-4 flex items-center gap-3 text-sm text-ink-soft">
-            <input
-              type="checkbox"
-              className="size-4 accent-femi-500"
-              checked={saveAddress}
-              onChange={(event) => setSaveAddress(event.target.checked)}
-            />
-            Save this address to my account
-          </label>
+          {user && (
+            <label className="mt-4 flex items-center gap-3 text-sm text-ink-soft">
+              <input
+                type="checkbox"
+                className="size-4 accent-femi-500"
+                checked={saveAddress}
+                onChange={(event) => setSaveAddress(event.target.checked)}
+              />
+              Save this address to my account
+            </label>
+          )}
         </section>
       </div>
 

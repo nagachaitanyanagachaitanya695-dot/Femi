@@ -109,7 +109,7 @@ export function CartView() {
           Proceed to checkout
         </Button>
         <p className="mt-3 text-center text-xs leading-relaxed text-ink-faint">
-          Sign in required at checkout. Orders ship with {site.courier.name}.
+          No account needed to order. Orders ship with {site.courier.name}.
         </p>
       </div>
     </div>

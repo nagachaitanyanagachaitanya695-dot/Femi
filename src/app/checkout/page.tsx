@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getStore } from "@/lib/db";
@@ -13,11 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function CheckoutPage() {
-  // The checkout gate. Guests are sent to sign in and returned here after.
+  // Guests are welcome. Signing in is offered, not required.
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/checkout");
-
-  const addresses = await getStore().listAddresses(user.id);
+  const addresses = user ? await getStore().listAddresses(user.id) : [];
 
   return (
     <div className="container-page py-10 sm:py-14">

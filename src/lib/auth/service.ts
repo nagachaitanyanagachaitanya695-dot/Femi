@@ -11,6 +11,23 @@ import { issueOtp, verifyOtp } from "./otp";
 import { clearSessionCookie, setSessionCookie } from "./session";
 
 /**
+ * Attaches any guest orders placed with this email to the account.
+ *
+ * This is how "order without an account, see it in your history later" works:
+ * nothing is created on a customer's behalf at checkout, and the moment they
+ * do sign up or sign in, their earlier orders appear. Best-effort — a failure
+ * here must never block someone getting into their account.
+ */
+async function claimGuestOrders(userId: string, email: string): Promise<void> {
+  try {
+    const claimed = await getStore().claimOrdersByEmail(userId, email);
+    if (claimed > 0) console.info(`[femi][orders] linked ${claimed} guest order(s) to ${userId}`);
+  } catch (error) {
+    console.error("[femi][orders] could not link guest orders:", error);
+  }
+}
+
+/**
  * One API for the two authentication backends.
  *
  * Route handlers call these functions and never care which backend is active.
@@ -57,6 +74,8 @@ export async function signUp(input: SignupInput): Promise<AuthOutcome> {
           createdAt: new Date().toISOString(),
         })
         .catch(() => undefined);
+
+      await claimGuestOrders(data.user.id, email);
     }
 
     return { ok: true, needsEmailConfirmation: !data.session };
@@ -77,6 +96,7 @@ export async function signUp(input: SignupInput): Promise<AuthOutcome> {
     createdAt: new Date().toISOString(),
   };
   await store.createUser(user);
+  await claimGuestOrders(user.id, email);
   await setSessionCookie(user.id);
   return { ok: true };
 }
@@ -87,8 +107,10 @@ export async function signInWithPassword(rawEmail: string, password: string): Pr
 
   if (isSupabaseConfigured()) {
     const supabase = await getSupabaseServerClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error ? genericFailure : { ok: true };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return genericFailure;
+    if (data.user) await claimGuestOrders(data.user.id, email);
+    return { ok: true };
   }
 
   const user = await getCredentialStore().findUserByEmail(email);
@@ -98,6 +120,7 @@ export async function signInWithPassword(rawEmail: string, password: string): Pr
   const valid = await verifyPassword(password, stored);
   if (!user || !valid) return genericFailure;
 
+  await claimGuestOrders(user.id, email);
   await setSessionCookie(user.id);
   return { ok: true };
 }
@@ -130,8 +153,10 @@ export async function verifyLoginCode(rawEmail: string, code: string): Promise<A
 
   if (isSupabaseConfigured()) {
     const supabase = await getSupabaseServerClient();
-    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
-    return error ? { ok: false, message: "That code is not valid. Request a new one." } : { ok: true };
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+    if (error) return { ok: false, message: "That code is not valid. Request a new one." };
+    if (data.user) await claimGuestOrders(data.user.id, email);
+    return { ok: true };
   }
 
   const result = await verifyOtp(email, "login", code);
@@ -140,6 +165,7 @@ export async function verifyLoginCode(rawEmail: string, code: string): Promise<A
   const user = await getCredentialStore().findUserByEmail(email);
   if (!user) return { ok: false, message: "Account not found." };
 
+  await claimGuestOrders(user.id, email);
   await setSessionCookie(user.id);
   return { ok: true };
 }

@@ -6,6 +6,7 @@ import { WhatsAppIcon } from "@/components/layout/Icons";
 import { OrderStatusTrail } from "@/components/order/OrderStatusTrail";
 import { ButtonLink } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { hasOrderAccess } from "@/lib/auth/order-access";
 import { getStore } from "@/lib/db";
 import { formatDate, money } from "@/lib/format";
 import { site } from "@/lib/site";
@@ -24,11 +25,19 @@ export default async function OrderPage({ params }: Props) {
   const { reference } = await params;
 
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=/order/${reference}`);
-
   const order = await getStore().getOrder(reference);
-  // Customers see only their own orders; admins can open any.
-  if (!order || (order.userId !== user.id && user.role !== "admin")) notFound();
+  if (!order) notFound();
+
+  // Three ways to be allowed in: it is your order, you are an admin, or you
+  // are the browser that placed it (a guest, holding a signed grant).
+  const isOwner = Boolean(user && order.userId === user.id);
+  const isAdmin = user?.role === "admin";
+  const isGuestWhoOrdered = await hasOrderAccess(order.id, order.reference);
+
+  if (!isOwner && !isAdmin && !isGuestWhoOrdered) {
+    if (!user) redirect(`/login?next=/order/${reference}`);
+    notFound();
+  }
 
   const message = buildOrderMessage(order);
   const link = whatsappLink(message);

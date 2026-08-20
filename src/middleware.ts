@@ -11,8 +11,14 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, isSupabaseConfigured } from "@/lib/sup
  * Note this does *not* authorise anything: access checks live in the page and
  * route handlers, where the role is read from the database.
  */
-/** Routes a signed-out visitor has no business loading. */
-const PROTECTED = ["/checkout", "/account", "/admin", "/order"];
+/**
+ * Routes a signed-out visitor has no business loading.
+ *
+ * /checkout is deliberately absent: guests may buy without an account.
+ * /order is handled separately, because a guest holds a signed grant for the
+ * order they just placed rather than a session.
+ */
+const PROTECTED = ["/account", "/admin"];
 
 /**
  * Cheap "is there a session at all?" check.
@@ -29,10 +35,19 @@ function hasSessionCookie(request: NextRequest): boolean {
     .some((cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("auth-token"));
 }
 
+/** A guest carries a signed grant naming the orders they may view. */
+function hasOrderGrant(request: NextRequest): boolean {
+  return Boolean(request.cookies.get("femi_orders"));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (PROTECTED.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+  const needsSession =
+    PROTECTED.some((route) => pathname === route || pathname.startsWith(`${route}/`)) ||
+    (pathname.startsWith("/order/") && !hasOrderGrant(request));
+
+  if (needsSession) {
     if (!hasSessionCookie(request)) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";

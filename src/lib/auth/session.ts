@@ -1,7 +1,8 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+
+import { sign, safeEqual } from "./signing";
 
 export const SESSION_COOKIE = "femi_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -9,30 +10,6 @@ const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 interface SessionPayload {
   sub: string;
   exp: number;
-}
-
-function secret(): string {
-  const value = process.env.AUTH_SECRET;
-  if (value && value.length >= 32) return value;
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "AUTH_SECRET is missing or too short. Set a random 32+ character value before deploying.",
-    );
-  }
-  // Development only: keeps `npm run dev` working with no setup, and every
-  // restart with a different value simply invalidates local sessions.
-  return "femi-development-only-secret-do-not-use-in-production";
-}
-
-function sign(data: string): string {
-  return createHmac("sha256", secret()).update(data).digest("base64url");
-}
-
-function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
 }
 
 export function createSessionToken(userId: string): string {

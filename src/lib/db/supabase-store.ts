@@ -264,6 +264,17 @@ export const supabaseStore: Store = {
     return data ? toOrder(data) : null;
   },
 
+  async claimOrdersByEmail(userId, email) {
+    const { data, error } = await client()
+      .from("orders")
+      .update({ user_id: userId, updated_at: new Date().toISOString() })
+      .is("user_id", null)
+      .ilike("email", email.trim())
+      .select("id");
+    if (error) throw new Error(error.message);
+    return data?.length ?? 0;
+  },
+
   async getProfile(userId) {
     const { data, error } = await client()
       .from("profiles")

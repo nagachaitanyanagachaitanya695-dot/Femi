@@ -93,8 +93,8 @@ export function PurchasePanel({ product }: { product: Product }) {
       )}
 
       <p className="mt-4 text-center text-xs leading-relaxed text-ink-faint">
-        You will be asked to sign in before checkout. Orders are confirmed over WhatsApp — nothing is
-        charged automatically.
+        No account needed — you can check out as a guest. Orders are confirmed over WhatsApp —
+        nothing is charged automatically.
       </p>
     </div>
   );

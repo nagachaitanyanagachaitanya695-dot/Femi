@@ -132,6 +132,20 @@ export const fileStore: Store & CredentialStore = {
       return { ...order };
     }),
 
+  claimOrdersByEmail: (userId, email) =>
+    transact((db) => {
+      const target = email.trim().toLowerCase();
+      let claimed = 0;
+      for (const order of db.orders) {
+        if (order.userId === null && order.email.toLowerCase() === target) {
+          order.userId = userId;
+          order.updatedAt = new Date().toISOString();
+          claimed += 1;
+        }
+      }
+      return claimed;
+    }),
+
   /* ---- profiles + addresses ---- */
   getProfile: (userId) => read((db) => db.profiles.find((p) => p.id === userId) ?? null),
 
