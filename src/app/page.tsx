@@ -2,6 +2,7 @@ import { Benefits } from "@/components/home/Benefits";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { Faq } from "@/components/home/Faq";
 import { Hero } from "@/components/home/Hero";
+import { ScrollFilm } from "@/components/home/ScrollFilm";
 import { Testimonials } from "@/components/home/Testimonials";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { WhatsAppSteps } from "@/components/home/WhatsAppSteps";
@@ -9,12 +10,13 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { ButtonLink } from "@/components/ui/Button";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { categories } from "@/lib/catalog";
-import { getStore } from "@/lib/db";
+import { listProductsForDisplay } from "@/lib/db";
+import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const products = await getStore().listProducts();
+  const products = await listProductsForDisplay();
   const featured = [...products].sort((a, b) => b.popularity - a.popularity).slice(0, 4);
 
   // The three packs that float in the 3D hero.
@@ -32,6 +34,7 @@ export default async function HomePage() {
     <>
       <Hero packs={heroPacks} />
       <TrustStrip />
+      {site.scrollFilm.enabled && <ScrollFilm />}
 
       <Section>
         <SectionHeading

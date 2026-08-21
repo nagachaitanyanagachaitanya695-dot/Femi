@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { ProductBrowser } from "@/components/product/ProductBrowser";
 import { ProductCardSkeleton } from "@/components/product/ProductCard";
-import { getStore } from "@/lib/db";
+import { listProductsForDisplay } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductsPage() {
-  const products = await getStore().listProducts();
+  const products = await listProductsForDisplay();
 
   return (
     <div className="container-page py-10 sm:py-14">

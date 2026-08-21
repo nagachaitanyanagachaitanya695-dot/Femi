@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { getStore } from "@/lib/db";
+import { listProductsForDisplay } from "@/lib/db";
 import { getSiteUrl } from "@/lib/site-url";
 
 const base = getSiteUrl();
@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // A database that is unreachable at build time should cost us the product
   // URLs, not the whole deploy.
   try {
-    const products = await getStore().listProducts();
+    const products = await listProductsForDisplay();
     return [
       ...staticRoutes,
       ...products.map((product) => ({

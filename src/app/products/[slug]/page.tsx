@@ -7,7 +7,7 @@ import { PurchasePanel } from "@/components/product/PurchasePanel";
 import { PackViewer3D } from "@/components/three/PackViewer3D";
 import { Badge } from "@/components/ui/Badge";
 import { getCategory } from "@/lib/catalog";
-import { getStore } from "@/lib/db";
+import { getProductForDisplay, listProductsForDisplay } from "@/lib/db";
 import { discountPercent, money, pricePerPad } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -17,7 +17,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getStore().getProductBySlug(slug);
+  const product = await getProductForDisplay(slug);
   if (!product) return { title: "Product not found" };
 
   return {
@@ -29,11 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const store = getStore();
-  const product = await store.getProductBySlug(slug);
+  const product = await getProductForDisplay(slug);
   if (!product || !product.active) notFound();
 
-  const all = await store.listProducts();
+  const all = await listProductsForDisplay();
   const related = all
     .filter((p) => p.id !== product.id)
     .sort((a, b) => {

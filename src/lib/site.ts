@@ -61,7 +61,9 @@ export const site = {
    * Set `enabled: false` to turn the intro off entirely.
    */
   intro: {
-    enabled: true,
+    // Off: the film is used as a scroll animation instead (see scrollFilm).
+    // Set true to also play it full-screen on the first visit.
+    enabled: false,
     /**
      * Which cut to play. Change this one line to switch:
      *   "femi-intro"        full 10s, includes the anion / FAR-IR /
@@ -82,6 +84,25 @@ export const site = {
     },
     /** Hard stop, so a stalled video can never block the shop. */
     maxDurationMs: 12_000,
+  },
+
+  /**
+   * The product film, scrubbed by scroll on the homepage.
+   *
+   * Played as 60 pre-rendered frames rather than a seeking <video>, which
+   * stutters on phones.
+   */
+  scrollFilm: {
+    enabled: true,
+    frames: 60,
+    /**
+     * Frames 29-43 are the anion / FAR-IR / nano-silver claim cards. Set this
+     * to [29, 43] to drop them and the film plays straight past; null keeps
+     * the full sequence.
+     */
+    skip: null as [number, number] | null,
+    /** How many screens of scrolling the film spans. Higher = slower. */
+    scrollScreens: 3,
   },
 
   currency: "INR",
