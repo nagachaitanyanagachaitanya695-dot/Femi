@@ -150,7 +150,11 @@ export function ScrollFilm() {
       className="relative bg-[#efe7dc]"
       style={{ height: `${site.scrollFilm.scrollScreens * 100}vh` }}
     >
-      <div className="sticky top-0 flex h-[100svh] w-full flex-col items-center justify-center overflow-hidden">
+      {/* min-height in vh as well as svh: if a browser does not understand
+          svh the height would fall back to auto and the stage would collapse. */}
+      <div
+        className="sticky top-0 flex h-[100svh] min-h-screen w-full flex-col items-center justify-center overflow-hidden"
+      >
         {/*
           A 16:9 box on phones, so the film plays whole instead of leaving
           empty bands, with the copy filling the space around it. From large
@@ -166,13 +170,28 @@ export function ScrollFilm() {
         </div>
 
         <div className="relative mt-6 aspect-video w-full lg:absolute lg:inset-0 lg:mt-0 lg:aspect-auto lg:h-full">
-          <canvas ref={canvasRef} className="h-full w-full" aria-hidden />
+          {/*
+            The first frame as a plain image, behind the canvas.
+            It is server-rendered, so the pack is on screen even if JavaScript
+            never runs, the canvas fails, or the frames are still downloading —
+            the section can never be a blank band. The canvas covers it as soon
+            as it has something to draw.
+          */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size
+              static frame; next/image would only add indirection here. */}
+          <img
+            src="/film/f001.webp"
+            alt="A Femi pack turning on a podium, surrounded by cotton and leaves"
+            className="absolute inset-0 h-full w-full object-contain lg:object-cover"
+          />
 
-          {!ready && (
-            <div className="absolute inset-0 grid place-items-center">
-              <span className="text-sm font-medium text-[#6b5a49]">Loading…</span>
-            </div>
-          )}
+          <canvas
+            ref={canvasRef}
+            className={`relative h-full w-full transition-opacity duration-300 ${
+              ready ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden
+          />
         </div>
 
         <p className="pointer-events-none absolute inset-x-0 bottom-7 text-center text-xs font-semibold tracking-[0.2em] text-[#6b5a49] uppercase">
