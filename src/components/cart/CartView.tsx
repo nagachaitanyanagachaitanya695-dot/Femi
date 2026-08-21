@@ -13,7 +13,7 @@ import { site } from "@/lib/site";
 import { OrderSummary } from "./OrderSummary";
 
 export function CartView() {
-  const { items, lines, totals, setQty, remove, ready, pricing } = useCart();
+  const { items, lines, totals, setQty, remove, ready, pricing, pricingFailed } = useCart();
   const router = useRouter();
 
   if (!ready) {
@@ -99,10 +99,16 @@ export function CartView() {
 
       <div className="lg:sticky lg:top-24">
         <OrderSummary totals={totals} pricing={pricing} />
+        {pricingFailed && (
+          <p className="mt-3 rounded-2xl border border-femi-200 bg-femi-50 px-4 py-3 text-xs leading-relaxed text-femi-700">
+            We could not refresh prices just now. You can still check out — the
+            exact total is confirmed before payment.
+          </p>
+        )}
         <Button
           size="lg"
           className="mt-4 w-full"
-          disabled={lines.length === 0}
+          disabled={items.length === 0}
           loading={pricing}
           onClick={() => router.push("/checkout")}
         >

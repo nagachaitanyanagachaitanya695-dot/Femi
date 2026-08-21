@@ -43,6 +43,8 @@ let cache: DbShape | null = null;
 /** Serialises read-modify-write cycles within this process. */
 let queue: Promise<unknown> = Promise.resolve();
 
+let warnedReadOnly = false;
+
 async function load(): Promise<DbShape> {
   if (cache) return cache;
   try {
@@ -51,16 +53,37 @@ async function load(): Promise<DbShape> {
     cache = { ...emptyDb(), ...parsed };
   } catch {
     cache = emptyDb();
+    // Seeding the file is a convenience, not a requirement. On a read-only
+    // filesystem — which is what a serverless host gives you — this write is
+    // refused, and letting that reject made every read fail: the catalogue
+    // would not load, so cart pricing 500'd and the checkout button sat
+    // permanently disabled. Reads must work even when nothing can be written.
     await persist(cache);
   }
   return cache;
 }
 
+/**
+ * Writes the database to disk. Never throws: callers have already updated the
+ * in-memory copy, and a host that will not accept writes should degrade to a
+ * read-only catalogue rather than take the shop down.
+ */
 async function persist(db: DbShape): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const tmp = `${DATA_FILE}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
-  await fs.rename(tmp, DATA_FILE);
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    const tmp = `${DATA_FILE}.${process.pid}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
+    await fs.rename(tmp, DATA_FILE);
+  } catch (error) {
+    if (!warnedReadOnly) {
+      warnedReadOnly = true;
+      console.warn(
+        "[femi][db] cannot write to " + DATA_DIR + " — data will not survive a restart. " +
+          "This is expected on a serverless host: configure Supabase for durable orders.",
+        error,
+      );
+    }
+  }
 }
 
 function transact<T>(fn: (db: DbShape) => T | Promise<T>): Promise<T> {

@@ -38,7 +38,7 @@ export function CheckoutForm({
   user: AuthUser | null;
   savedAddresses: Address[];
 }) {
-  const { items, lines, totals, ready, pricing, clear } = useCart();
+  const { items, lines, totals, ready, pricing, pricingFailed, clear } = useCart();
   const { notify } = useToast();
   const router = useRouter();
 
@@ -389,13 +389,26 @@ export function CheckoutForm({
 
         <OrderSummary totals={totals} pricing={pricing} title="Total to pay" />
 
+        {pricingFailed && (
+          <p className="rounded-2xl border border-femi-200 bg-femi-50 px-4 py-3 text-xs leading-relaxed text-femi-700">
+            We could not refresh prices just now, so the total above may be out of
+            date. You can still place the order — we confirm the exact amount on
+            WhatsApp before you pay anything.
+          </p>
+        )}
+
         <Button
           type="submit"
           variant="whatsapp"
           size="lg"
           className="w-full"
           loading={submitting}
-          disabled={lines.length === 0 || pricing}
+          // Gated on the cart itself, never on the priced lines. Those come
+          // from /api/cart/price and are only for display — the server
+          // recomputes every price when the order is placed. Disabling on
+          // them meant one failed pricing call left the button permanently
+          // dead and the customer unable to order at all.
+          disabled={items.length === 0}
         >
           <WhatsAppIcon className="size-5" />
           Place order via WhatsApp

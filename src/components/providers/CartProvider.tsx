@@ -22,6 +22,8 @@ interface CartApi {
   count: number;
   ready: boolean;
   pricing: boolean;
+  /** The server could not be reached for prices. Totals shown may be stale. */
+  pricingFailed: boolean;
   add: (productId: string, qty?: number) => void;
   setQty: (productId: string, qty: number) => void;
   remove: (productId: string) => void;
@@ -78,6 +80,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [totals, setTotals] = useState<OrderTotals>(EMPTY_TOTALS);
   const [ready, setReady] = useState(false);
   const [pricing, setPricing] = useState(false);
+  const [pricingFailed, setPricingFailed] = useState(false);
   const requestId = useRef(0);
 
   useEffect(() => {
@@ -102,6 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setLines([]);
       setTotals(EMPTY_TOTALS);
       setPricing(false);
+      setPricingFailed(false);
       return;
     }
 
@@ -118,9 +122,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (id !== requestId.current) return;
         setLines(data.lines);
         setTotals(data.totals);
+        setPricingFailed(false);
       })
       .catch(() => {
-        if (id === requestId.current) setLines([]);
+        // Deliberately keep whatever was last shown rather than emptying the
+        // cart. Wiping it here used to disable the checkout button outright,
+        // so one failed pricing call locked the customer out of ordering —
+        // even though the server re-prices the order from ids and quantities
+        // and never trusts these numbers anyway.
+        if (id === requestId.current) setPricingFailed(true);
       })
       .finally(() => {
         if (id === requestId.current) setPricing(false);
@@ -163,8 +173,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const count = useMemo(() => items.reduce((sum, line) => sum + line.qty, 0), [items]);
 
   const value = useMemo(
-    () => ({ items, lines, totals, count, ready, pricing, add, setQty, remove, clear, qtyOf }),
-    [items, lines, totals, count, ready, pricing, add, setQty, remove, clear, qtyOf],
+    () => ({
+      items, lines, totals, count, ready, pricing, pricingFailed,
+      add, setQty, remove, clear, qtyOf,
+    }),
+    [items, lines, totals, count, ready, pricing, pricingFailed, add, setQty, remove, clear, qtyOf],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
