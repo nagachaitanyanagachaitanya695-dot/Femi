@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { WhatsAppIcon } from "@/components/layout/Icons";
 import { OrderStatusTrail } from "@/components/order/OrderStatusTrail";
+import { SendToWhatsApp } from "@/components/order/SendToWhatsApp";
 import { ButtonLink } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { hasOrderAccess } from "@/lib/auth/order-access";
@@ -44,6 +46,9 @@ export default async function OrderPage({ params }: Props) {
 
   return (
     <div className="container-page py-10 sm:py-14">
+      <Suspense fallback={null}>
+        <SendToWhatsApp url={link} />
+      </Suspense>
       <div className="mx-auto max-w-3xl">
         <div className="rounded-card border border-femi-100 bg-gradient-to-br from-femi-50 to-white p-6 text-center sm:p-10">
           <span aria-hidden className="mx-auto grid size-14 place-items-center rounded-full bg-white text-2xl shadow-soft">

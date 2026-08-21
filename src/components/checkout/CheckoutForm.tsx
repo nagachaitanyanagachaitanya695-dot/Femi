@@ -126,12 +126,20 @@ export function CheckoutForm({
         // Storage unavailable; the order is safe on the server either way.
       }
 
-      // Open WhatsApp first (still inside the click gesture, so it is not
-      // treated as a pop-up), then move to the confirmation page.
-      window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
       clear();
-      notify("Order created. Send the message on WhatsApp to confirm it.");
-      router.push(`/order/${data.order.reference}`);
+      notify("Order saved. Opening WhatsApp to send it…");
+
+      // Deliberately no window.open here.
+      //
+      // By this point we are past `await fetch`, so the browser no longer
+      // counts this as part of the customer's tap and mobile Chrome and
+      // Safari block it as a pop-up: the order was created but WhatsApp
+      // never opened, which looks like the button doing nothing.
+      //
+      // The confirmation page hands off instead, using a top-level
+      // navigation that cannot be blocked — and shows a plain link as a
+      // fallback if even that is refused.
+      router.push(`/order/${data.order.reference}?send=1`);
     } catch {
       setError("Network problem. Your cart is safe — please try again.");
     } finally {
