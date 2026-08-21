@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabaseAdminClient, getSupabasePublicClient } from "../supabase/server";
 import type { Address, Order, Product, UserProfile } from "../types";
+import { StoreConfigError } from "./errors";
 import type { Store } from "./types";
 
 /**
@@ -39,7 +40,7 @@ function orderColumn(identifier: string): "id" | "reference" {
 function client(): SupabaseClient {
   const admin = getSupabaseAdminClient();
   if (!admin) {
-    throw new Error(
+    throw new StoreConfigError(
       "SUPABASE_SERVICE_ROLE_KEY is missing. Add it to your server environment — " +
         "orders and admin actions cannot run without it.",
     );
@@ -52,7 +53,7 @@ function reader(): SupabaseClient {
   if (admin) return admin;
 
   const anon = getSupabasePublicClient();
-  if (!anon) throw new Error("Supabase is not configured.");
+  if (!anon) throw new StoreConfigError("Supabase is not configured.");
   return anon;
 }
 
