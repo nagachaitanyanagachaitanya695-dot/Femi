@@ -116,7 +116,19 @@ export function Footer() {
 
       <div className="border-t border-femi-100">
         <div className="container-page flex flex-col gap-3 py-6 text-xs text-ink-faint sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {site.name}. All rights reserved.{" "}
+            {/*
+              Which build is on screen. Working out whether a change had
+              actually shipped was costing more time than the changes did; one
+              look at the footer now answers it. A commit hash is public
+              information — the repository is public — and says nothing about
+              configuration.
+            */}
+            <span className="opacity-60">
+              build {(process.env.VERCEL_GIT_COMMIT_SHA ?? "local").slice(0, 7)}
+            </span>
+          </p>
           <p className="max-w-xl leading-relaxed">{site.disclaimer}</p>
         </div>
       </div>
