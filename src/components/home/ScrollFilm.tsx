@@ -50,17 +50,11 @@ export function ScrollFilm() {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Fill the frame only when the screen is a similar shape to the film.
-    // The film is 16:9 with the pack centred and its wordmark near the edges,
-    // so cropping it to a portrait phone throws away the product — it leaves a
-    // zoomed slice of the pad. There, fit the whole frame instead and let it
-    // letterbox against the section's own background.
-    const imageAspect = image.naturalWidth / image.naturalHeight;
-    const fillFrame = width / height >= imageAspect * 0.75;
-
-    const scale = fillFrame
-      ? Math.max(width / image.naturalWidth, height / image.naturalHeight)
-      : Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    // Always crop to fill the box rather than letterbox. The box itself now
+    // carries the per-device ratio — a tall 4:5 crop on phones, the full
+    // (wide) viewport on desktop — so this one rule produces two different
+    // framings of the same 16:9 film without any device check here.
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
 
     const w = image.naturalWidth * scale;
     const h = image.naturalHeight * scale;
@@ -155,11 +149,6 @@ export function ScrollFilm() {
       <div
         className="sticky top-0 flex h-[100svh] min-h-screen w-full flex-col items-center justify-center overflow-hidden"
       >
-        {/*
-          A 16:9 box on phones, so the film plays whole instead of leaving
-          empty bands, with the copy filling the space around it. From large
-          screens up the box becomes the whole stage and the film fills it.
-        */}
         <div className="px-5 text-center lg:hidden">
           <p className="text-xs font-semibold tracking-[0.22em] text-[#8a7660] uppercase">
             Every side of the pack
@@ -169,7 +158,13 @@ export function ScrollFilm() {
           </h2>
         </div>
 
-        <div className="relative mt-6 aspect-video w-full lg:absolute lg:inset-0 lg:mt-0 lg:aspect-auto lg:h-full">
+        {/*
+          Two different crops of the same film: a tall 4:5 panel on phones
+          (the pack fills a portrait frame, like a reel), the full wide
+          viewport from lg up (the pack fills the whole screen). Same 60
+          source frames either way — only the box's ratio changes.
+        */}
+        <div className="relative mt-6 aspect-[4/5] w-full max-w-sm lg:absolute lg:inset-0 lg:mt-0 lg:aspect-auto lg:h-full lg:max-w-none">
           {/*
             The first frame as a plain image, behind the canvas.
             It is server-rendered, so the pack is on screen even if JavaScript
@@ -182,7 +177,7 @@ export function ScrollFilm() {
           <img
             src="/film/f001.webp"
             alt="A Femi pack turning on a podium, surrounded by cotton and leaves"
-            className="absolute inset-0 h-full w-full object-contain lg:object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
 
           <canvas
