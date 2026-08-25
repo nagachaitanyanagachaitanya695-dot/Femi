@@ -2,7 +2,7 @@ import { Benefits } from "@/components/home/Benefits";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { Faq } from "@/components/home/Faq";
 import { Hero } from "@/components/home/Hero";
-import { ScrollFilm } from "@/components/home/ScrollFilm";
+import { PackFilm } from "@/components/home/PackFilm";
 import { Testimonials } from "@/components/home/Testimonials";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { WhatsAppSteps } from "@/components/home/WhatsAppSteps";
@@ -34,7 +34,7 @@ export default async function HomePage() {
     <>
       <Hero packs={heroPacks} />
       <TrustStrip />
-      {site.scrollFilm.enabled && <ScrollFilm />}
+      {site.packFilm.enabled && <PackFilm />}
 
       <Section>
         <SectionHeading

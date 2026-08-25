@@ -61,7 +61,7 @@ export const site = {
    * Set `enabled: false` to turn the intro off entirely.
    */
   intro: {
-    // Off: the film is used as a scroll animation instead (see scrollFilm).
+    // Off: the film plays as a background band instead (see packFilm).
     // Set true to also play it full-screen on the first visit.
     enabled: false,
     /**
@@ -87,22 +87,20 @@ export const site = {
   },
 
   /**
-   * The product film, scrubbed by scroll on the homepage.
+   * The product film, playing as a background band on the homepage.
    *
-   * Played as 60 pre-rendered frames rather than a seeking <video>, which
-   * stutters on phones.
+   * Two cuts of one film ship: the full 16:9 for desktop, and a 4:5 crop of
+   * the product pass for phones. Both are silent — the audio track is stripped
+   * from the files themselves, not merely muted in the player.
+   *
+   * The source footage ran 10s; the cut here is 4.8s, with 4.2s-7.3s removed.
+   * That stretch is the anion / FAR-IR / nano-silver cards, which assert that
+   * the product reduces discomfort, improves circulation and is antibacterial.
+   * Those are medical claims, and `disclaimer` below states the site makes
+   * none. To restore them, re-cut from the original rather than editing here.
    */
-  scrollFilm: {
+  packFilm: {
     enabled: true,
-    frames: 60,
-    /**
-     * Frames 29-43 are the anion / FAR-IR / nano-silver claim cards. Set this
-     * to [29, 43] to drop them and the film plays straight past; null keeps
-     * the full sequence.
-     */
-    skip: null as [number, number] | null,
-    /** How many screens of scrolling the film spans. Higher = slower. */
-    scrollScreens: 3,
   },
 
   currency: "INR",

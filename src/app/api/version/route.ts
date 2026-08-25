@@ -24,10 +24,9 @@ export const GET = handler(async () => {
     commitFull: commit,
     deployedAt: process.env.VERCEL_DEPLOYMENT_ID ? "vercel" : "local",
     features: {
-      scrollFilm: site.scrollFilm.enabled,
+      packFilm: site.packFilm.enabled,
       fullScreenIntro: site.intro.enabled,
       introCut: site.intro.file,
-      claimFramesSkipped: site.scrollFilm.skip !== null,
     },
     config: {
       supabaseConfigured: isSupabaseConfigured(),
