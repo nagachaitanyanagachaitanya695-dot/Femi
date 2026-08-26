@@ -21,12 +21,10 @@ import { supportLink } from "@/lib/whatsapp";
  * so a seek is a single decode, and both preload whole so no seek waits on the
  * network.
  *
- * Filling the screen differs by device, because the film is 16:9 and a phone
- * is roughly 9:19. Wide screens are close enough to the film's shape to crop
- * to fill. Phones are not — cropping to fill leaves about a quarter of the
- * frame's width, which cuts the pack in half — so there the film runs full
- * width and its edges are dissolved into the page's cream by .film-feather,
- * making the screen one continuous scene instead of a video in a box.
+ * Both cuts fill the screen edge to edge. They are framed for it rather than
+ * stretched into it: the desktop cut is a 1.60 window on the film, and the
+ * phone cut a 9:16 portrait window on the pack, so neither has to be cropped
+ * far to cover the shape it lands on.
  *
  * Neither file carries an audio track at all, not merely muted.
  */
@@ -152,7 +150,7 @@ export function PackFilm() {
       ref={sectionRef}
       aria-label="The Femi pack, in film"
       className="relative bg-[#efe7dc]"
-      style={{ height: "340vh" }}
+      style={{ height: "620vh" }}
     >
       {/* min-h-screen alongside svh: a browser that does not know svh would
           fall back to auto and collapse the stage to nothing. */}
@@ -169,7 +167,7 @@ export function PackFilm() {
           src="/film/pack-tall-poster.webp"
           alt=""
           aria-hidden
-          className="film-feather absolute top-1/2 left-0 h-auto w-full -translate-y-1/2 lg:hidden"
+          className="absolute inset-0 h-full w-full object-cover lg:hidden"
         />
         {/* eslint-disable-next-line @next/next/no-img-element -- as above. */}
         <img
@@ -185,15 +183,7 @@ export function PackFilm() {
           playsInline
           preload="auto"
           aria-label="A Femi pack turning on a podium among cotton and leaves"
-          /*
-            On phones the element is sized to the film itself (full width,
-            natural height, centred) rather than to the stage. The feather mask
-            runs over the element box, so the two have to be the same thing —
-            stretched to the stage with object-contain, the fade would land in
-            the empty space above and below and the film would still end in a
-            hard line. Wide screens fill the stage outright.
-          */
-          className="film-feather absolute top-1/2 left-0 h-auto w-full -translate-y-1/2 lg:inset-0 lg:h-full lg:translate-y-0 lg:object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         >
           {/*
             MP4 first: it is about half the size of the all-keyframe WebM, and
