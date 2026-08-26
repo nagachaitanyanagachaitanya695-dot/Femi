@@ -38,10 +38,10 @@ export function PackFilm() {
   const easeRef = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const FILM_END = 0.82; // film finishes a little before the section does
-  const TITLE_OUT = 0.24; // opening words clear by here
-  const ACTIONS_IN = 0.6;
-  const ACTIONS_FULL = 0.82;
+  const FILM_END = 0.88; // film finishes a little before the section does
+  const TITLE_OUT = 0.12; // opening words clear by here
+  const ACTIONS_IN = 0.74;
+  const ACTIONS_FULL = 0.9;
 
   /**
    * Chases the scroll target instead of jumping to it.
@@ -150,7 +150,7 @@ export function PackFilm() {
       ref={sectionRef}
       aria-label="The Femi pack, in film"
       className="relative bg-[#efe7dc]"
-      style={{ height: "620vh" }}
+      style={{ height: "1600vh" }}
     >
       {/* min-h-screen alongside svh: a browser that does not know svh would
           fall back to auto and collapse the stage to nothing. */}
