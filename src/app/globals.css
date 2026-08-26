@@ -133,3 +133,35 @@ html[data-intro="1"] body::before {
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
 }
+
+/*
+ * The opening film sits on the same cream as the page. On phones the film is
+ * far wider than the screen is, so it cannot fill the viewport without
+ * cropping the pack out of shot; instead its top and bottom edges are
+ * dissolved into the page, which leaves one continuous full-screen scene
+ * rather than a video in a box. Wide screens are close enough to the film's
+ * own shape to fill outright, so the mask comes off there.
+ */
+.film-feather {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+}
+
+@media (min-width: 1024px) {
+  .film-feather {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

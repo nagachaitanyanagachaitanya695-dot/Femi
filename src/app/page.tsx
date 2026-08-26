@@ -32,9 +32,11 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* The film opens the shop and holds the whole screen; the rest of the
+          page follows once the reader has scrolled through it. */}
+      {site.packFilm.enabled && <PackFilm />}
       <Hero packs={heroPacks} />
       <TrustStrip />
-      {site.packFilm.enabled && <PackFilm />}
 
       <Section>
         <SectionHeading

@@ -9,41 +9,45 @@ import { site } from "@/lib/site";
 import { supportLink } from "@/lib/whatsapp";
 
 /**
- * The product film, advanced by scrolling.
+ * The film that opens the shop, advanced by scrolling.
  *
- * The section is tall and the stage inside it is sticky, so the page keeps
- * scrolling normally while the film holds the screen and plays forward under
- * the reader's thumb — it never autoplays and never takes the scroll away.
+ * It is the first thing on the page and holds the whole screen: the section is
+ * tall, the stage inside it is sticky, and scroll position sets the video's
+ * currentTime. The page scrolls normally throughout — the film holds the view
+ * but never takes the scroll away, and it never plays on its own.
  *
- * Scrubbing is done by setting currentTime on a <video>. That is normally slow,
- * because a seek has to decode forward from the preceding keyframe; both cuts
- * are encoded with every frame a keyframe, which makes each seek one decode.
- * They are also preloaded whole, so no seek waits on the network.
+ * Scrubbing a <video> is normally slow, because a seek decodes forward from
+ * the preceding keyframe. Both cuts are encoded with every frame a keyframe,
+ * so a seek is a single decode, and both preload whole so no seek waits on the
+ * network.
  *
- * Two cuts of the same film ship, chosen by the <source media> queries: the
- * full 16:9 for desktop, and a 4:5 crop of the product pass for phones so the
- * pack fills the screen rather than sitting in a letterboxed strip.
+ * Filling the screen differs by device, because the film is 16:9 and a phone
+ * is roughly 9:19. Wide screens are close enough to the film's shape to crop
+ * to fill. Phones are not — cropping to fill leaves about a quarter of the
+ * frame's width, which cuts the pack in half — so there the film runs full
+ * width and its edges are dissolved into the page's cream by .film-feather,
+ * making the screen one continuous scene instead of a video in a box.
  *
- * Both files have no audio track at all, not merely muted.
+ * Neither file carries an audio track at all, not merely muted.
  */
 export function PackFilm() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const titleRef = useRef<HTMLDivElement | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  /** How far the film runs before the buttons finish arriving. */
-  const FILM_END = 0.78;
-  const REVEAL_FROM = 0.5;
-  const REVEAL_TO = 0.72;
+  const FILM_END = 0.8; // film finishes before the section does
+  const TITLE_OUT = 0.28; // opening words clear by here
+  const ACTIONS_IN = 0.52;
+  const ACTIONS_FULL = 0.74;
 
   const onScroll = useCallback(() => {
     if (frameRef.current) return;
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = 0;
       const section = sectionRef.current;
-      const video = videoRef.current;
       if (!section) return;
 
       const rect = section.getBoundingClientRect();
@@ -51,24 +55,31 @@ export function PackFilm() {
       if (scrollable <= 0) return;
       const progress = Math.min(Math.max(-rect.top / scrollable, 0), 1);
 
+      const video = videoRef.current;
       if (video?.duration) {
         const t = Math.min(progress / FILM_END, 1) * video.duration;
-        // Skip sub-frame moves; at 15fps anything closer than half a frame
-        // would seek to the picture already on screen.
-        if (Math.abs(video.currentTime - t) > 1 / 30) video.currentTime = t;
+        // Skip sub-frame moves; closer than half a frame is the same picture.
+        if (Math.abs(video.currentTime - t) > 1 / 48) video.currentTime = t;
       }
 
-      // Driven straight through the DOM rather than through state: this runs
-      // on every frame of a scroll, and re-rendering that often would stutter.
-      const overlay = overlayRef.current;
-      if (overlay) {
-        const reveal = Math.min(
-          Math.max((progress - REVEAL_FROM) / (REVEAL_TO - REVEAL_FROM), 0),
+      // Written straight to the DOM: this runs on every frame of a scroll, and
+      // re-rendering that often would stutter.
+      const title = titleRef.current;
+      if (title) {
+        const out = Math.min(progress / TITLE_OUT, 1);
+        title.style.opacity = String(1 - out);
+        title.style.transform = `translateY(${out * -24}px)`;
+      }
+
+      const actions = actionsRef.current;
+      if (actions) {
+        const now = Math.min(
+          Math.max((progress - ACTIONS_IN) / (ACTIONS_FULL - ACTIONS_IN), 0),
           1,
         );
-        overlay.style.opacity = String(reveal);
-        overlay.style.transform = `translateY(${(1 - reveal) * 18}px)`;
-        overlay.style.pointerEvents = reveal > 0.6 ? "auto" : "none";
+        actions.style.opacity = String(now);
+        actions.style.transform = `translateY(${(1 - now) * 20}px)`;
+        actions.style.pointerEvents = now > 0.6 ? "auto" : "none";
       }
     });
   }, []);
@@ -77,22 +88,26 @@ export function PackFilm() {
     const video = videoRef.current;
     if (video) {
       video.muted = true;
-      // Some mobile browsers paint nothing until the video has been decoded
-      // once. Nudging it off zero forces the first frame up.
-      const nudge = () => {
-        if (video.currentTime === 0) video.currentTime = 0.01;
-      };
-      video.addEventListener("loadeddata", nudge, { once: true });
+      // Some mobile browsers paint nothing until a frame has been decoded
+      // once; nudging off zero brings the first frame up.
+      video.addEventListener(
+        "loadeddata",
+        () => {
+          if (video.currentTime === 0) video.currentTime = 0.01;
+        },
+        { once: true },
+      );
     }
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
-      // No scrubbing, and the buttons are simply there.
-      const overlay = overlayRef.current;
-      if (overlay) {
-        overlay.style.opacity = "1";
-        overlay.style.transform = "none";
-        overlay.style.pointerEvents = "auto";
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // No scrubbing, and the words and buttons are simply present.
+      for (const ref of [titleRef, actionsRef]) {
+        const el = ref.current;
+        if (el) {
+          el.style.opacity = "1";
+          el.style.transform = "none";
+          el.style.pointerEvents = "auto";
+        }
       }
       return;
     }
@@ -112,27 +127,31 @@ export function PackFilm() {
       ref={sectionRef}
       aria-label="The Femi pack, in film"
       className="relative bg-[#efe7dc]"
-      style={{ height: "320vh" }}
+      style={{ height: "340vh" }}
     >
-      {/* min-h-screen as well as svh: a browser that does not understand svh
-          would otherwise fall back to auto and collapse the stage. */}
-      <div className="sticky top-0 flex h-[100svh] min-h-screen w-full items-center justify-center overflow-hidden">
+      {/* min-h-screen alongside svh: a browser that does not know svh would
+          fall back to auto and collapse the stage to nothing. */}
+      <div className="sticky top-0 h-[100svh] min-h-screen w-full overflow-hidden">
         <video
           ref={videoRef}
           muted
           playsInline
           preload="auto"
           aria-label="A Femi pack turning on a podium among cotton and leaves"
-          /* contain, not cover: the stage is the whole screen, and a phone is
-             far taller than either cut, so filling it would crop away most of
-             the pack. What is left over is the same cream the film is shot and
-             faded against, so it reads as the frame rather than as bars. */
-          className="absolute inset-0 h-full w-full object-contain"
+          /*
+            On phones the element is sized to the film itself (full width,
+            natural height, centred) rather than to the stage. The feather mask
+            runs over the element box, so the two have to be the same thing —
+            stretched to the stage with object-contain, the fade would land in
+            the empty space above and below and the film would still end in a
+            hard line. Wide screens fill the stage outright.
+          */
+          className="film-feather absolute top-1/2 left-0 h-auto w-full -translate-y-1/2 lg:inset-0 lg:h-full lg:translate-y-0 lg:object-cover"
         >
           {/*
-            MP4 first: it is roughly half the size of the all-keyframe WebM,
-            and every browser that ships H.264 should take it. The WebM is
-            there for builds without H.264, which would otherwise get nothing.
+            MP4 first: it is about half the size of the all-keyframe WebM, and
+            any browser shipping H.264 should take it. The WebM is there for
+            builds without H.264, which would otherwise get nothing at all.
           */}
           <source media="(min-width: 1024px)" src="/film/pack-wide.mp4" type="video/mp4" />
           <source media="(min-width: 1024px)" src="/film/pack-wide.webm" type="video/webm" />
@@ -140,19 +159,28 @@ export function PackFilm() {
           <source src="/film/pack-tall.webm" type="video/webm" />
         </video>
 
-        {/* Keeps the buttons readable over whatever frame is behind them. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[#efe7dc] via-[#efe7dc]/80 to-transparent" />
+        <div
+          ref={titleRef}
+          className="pointer-events-none absolute inset-x-0 top-[16svh] px-6 text-center"
+        >
+          <p className="text-[11px] font-semibold tracking-[0.34em] text-[#8a7660] uppercase">
+            {site.name} · Everyday
+          </p>
+          <h2 className="mx-auto mt-3 max-w-lg font-display text-4xl leading-[1.08] text-[#3a2c1d] sm:text-5xl">
+            Made to be worn, not noticed
+          </h2>
+        </div>
 
         <div
-          ref={overlayRef}
+          ref={actionsRef}
           /* pb-28 on small screens clears the fixed bottom tab bar, which
-             otherwise sits over the buttons. */
-          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 px-5 pb-28 sm:pb-14"
+             would otherwise sit over the buttons. */
+          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 px-5 pb-28 sm:pb-16"
         >
           {detailsOpen && (
             <div className="w-full max-w-md rounded-3xl border border-femi-100 bg-white/95 p-5 shadow-lift backdrop-blur-sm sm:p-6">
               <div className="flex items-start justify-between gap-4">
-                <h2 className="font-display text-xl text-ink">Get in touch</h2>
+                <h3 className="font-display text-xl text-ink">Get in touch</h3>
                 <button
                   type="button"
                   onClick={() => setDetailsOpen(false)}
