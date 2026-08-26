@@ -17,14 +17,15 @@ import { supportLink } from "@/lib/whatsapp";
  * but never takes the scroll away, and it never plays on its own.
  *
  * Scrubbing a <video> is normally slow, because a seek decodes forward from
- * the preceding keyframe. Both cuts are encoded with every frame a keyframe,
- * so a seek is a single decode, and both preload whole so no seek waits on the
- * network.
+ * the preceding keyframe. Both cuts carry a keyframe every four frames, so a
+ * seek decodes at most four, and both preload whole so no seek waits on the
+ * network. Measured, that is 6-11ms a seek — no worse than making every frame
+ * a keyframe, at half the file size.
  *
- * Both cuts fill the screen edge to edge. They are framed for it rather than
- * stretched into it: the desktop cut is a 1.60 window on the film, and the
- * phone cut a 9:16 portrait window on the pack, so neither has to be cropped
- * far to cover the shape it lands on.
+ * Desktop gets the film at its own 16:9. The full cut opens and closes on
+ * cards whose text runs to the edges of the frame, so cropping the sides to
+ * fit a narrower window would clip them. The phone cut is a 9:16 window on the
+ * pack, placed so those same cards do not bleed into its edge.
  *
  * Neither file carries an audio track at all, not merely muted.
  */
@@ -39,7 +40,7 @@ export function PackFilm() {
   const seekStartRef = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const FPS = 60; // must match the encoded cuts
+  const FPS = 24; // must match the encoded cuts
   const FILM_END = 0.88; // film finishes a little before the section does
   const TITLE_OUT = 0.12; // opening words clear by here
   const ACTIONS_IN = 0.74;
@@ -76,9 +77,10 @@ export function PackFilm() {
 
     seekingRef.current = true;
     seekStartRef.current = performance.now();
-    // Every frame is a keyframe, so fastSeek is exact here as well as cheaper.
-    if (typeof video.fastSeek === "function") video.fastSeek(wanted);
-    else video.currentTime = wanted;
+    // Deliberately not fastSeek: it lands on the nearest keyframe, and with a
+    // keyframe every four frames that is up to two frames wrong. Seeks here
+    // measure 6-11ms anyway, so exactness is worth more than the shortcut.
+    video.currentTime = wanted;
   }, []);
 
   const onScroll = useCallback(() => {
