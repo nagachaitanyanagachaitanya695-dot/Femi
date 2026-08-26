@@ -24,14 +24,22 @@ export function StoreChrome({
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
 
+  /**
+   * The landing page is the film and nothing else — no bar across the top, no
+   * footer, no tab bar. Its own buttons carry the reader into the shop, and
+   * any chrome over it would break the single full-screen scene it is.
+   */
+  const isLanding = pathname === "/";
+  const chrome = !isAdmin && !isLanding;
+
   return (
     <>
-      {!isAdmin && header}
-      <main id="main" className={isAdmin ? undefined : "pb-20 md:pb-0"}>
+      {chrome && header}
+      <main id="main" className={chrome ? "pb-20 md:pb-0" : undefined}>
         {children}
       </main>
-      {!isAdmin && footer}
-      <MobileTabBar />
+      {chrome && footer}
+      {chrome && <MobileTabBar />}
     </>
   );
 }

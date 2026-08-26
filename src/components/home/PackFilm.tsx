@@ -36,12 +36,37 @@ export function PackFilm() {
   const titleRef = useRef<HTMLDivElement | null>(null);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef(0);
+  const targetRef = useRef(0);
+  const easeRef = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const FILM_END = 0.8; // film finishes before the section does
-  const TITLE_OUT = 0.28; // opening words clear by here
-  const ACTIONS_IN = 0.52;
-  const ACTIONS_FULL = 0.74;
+  const FILM_END = 0.82; // film finishes a little before the section does
+  const TITLE_OUT = 0.24; // opening words clear by here
+  const ACTIONS_IN = 0.6;
+  const ACTIONS_FULL = 0.82;
+
+  /**
+   * Chases the scroll target instead of jumping to it.
+   *
+   * Scroll events arrive in coarse jumps, especially from a wheel or a flung
+   * thumb, and following them exactly makes the film step. Easing toward the
+   * target each frame turns those jumps into a glide. The loop stops itself
+   * once it has arrived, so it is not burning frames while the page sits
+   * still.
+   */
+  const ease = useCallback(() => {
+    easeRef.current = 0;
+    const video = videoRef.current;
+    if (!video?.duration) return;
+
+    const distance = targetRef.current - video.currentTime;
+    if (Math.abs(distance) < 0.004) {
+      video.currentTime = targetRef.current;
+      return;
+    }
+    video.currentTime += distance * 0.16;
+    easeRef.current = requestAnimationFrame(ease);
+  }, []);
 
   const onScroll = useCallback(() => {
     if (frameRef.current) return;
@@ -57,9 +82,8 @@ export function PackFilm() {
 
       const video = videoRef.current;
       if (video?.duration) {
-        const t = Math.min(progress / FILM_END, 1) * video.duration;
-        // Skip sub-frame moves; closer than half a frame is the same picture.
-        if (Math.abs(video.currentTime - t) > 1 / 48) video.currentTime = t;
+        targetRef.current = Math.min(progress / FILM_END, 1) * video.duration;
+        if (!easeRef.current) easeRef.current = requestAnimationFrame(ease);
       }
 
       // Written straight to the DOM: this runs on every frame of a scroll, and
@@ -82,7 +106,7 @@ export function PackFilm() {
         actions.style.pointerEvents = now > 0.6 ? "auto" : "none";
       }
     });
-  }, []);
+  }, [ease]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -119,6 +143,7 @@ export function PackFilm() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      if (easeRef.current) cancelAnimationFrame(easeRef.current);
     };
   }, [onScroll]);
 
@@ -159,9 +184,17 @@ export function PackFilm() {
           <source src="/film/pack-tall.webm" type="video/webm" />
         </video>
 
+        {/*
+          Soft washes of the page's own cream at the top and bottom. The film
+          is bright and busy in the middle, and without these the opening words
+          and the buttons sit on whatever happens to be behind them.
+        */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[24svh] bg-gradient-to-b from-[#efe7dc]/90 via-[#efe7dc]/30 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[24svh] bg-gradient-to-t from-[#efe7dc]/90 via-[#efe7dc]/30 to-transparent" />
+
         <div
           ref={titleRef}
-          className="pointer-events-none absolute inset-x-0 top-[16svh] px-6 text-center"
+          className="pointer-events-none absolute inset-x-0 top-[9svh] px-6 text-center"
         >
           <p className="text-[11px] font-semibold tracking-[0.34em] text-[#8a7660] uppercase">
             {site.name} · Everyday
@@ -173,9 +206,7 @@ export function PackFilm() {
 
         <div
           ref={actionsRef}
-          /* pb-28 on small screens clears the fixed bottom tab bar, which
-             would otherwise sit over the buttons. */
-          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 px-5 pb-28 sm:pb-16"
+          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 px-5 pb-14 sm:pb-16"
         >
           {detailsOpen && (
             <div className="w-full max-w-md rounded-3xl border border-femi-100 bg-white/95 p-5 shadow-lift backdrop-blur-sm sm:p-6">

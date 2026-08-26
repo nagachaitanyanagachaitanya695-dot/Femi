@@ -16,7 +16,7 @@ const LINKS = [
   { href: "/products", label: "Shop all" },
   { href: "/products?category=overnight", label: "Overnight" },
   { href: "/products?category=value-packs", label: "Value packs" },
-  { href: "/#faq", label: "Help" },
+  { href: "/help", label: "Help" },
 ];
 
 export function Navbar() {
