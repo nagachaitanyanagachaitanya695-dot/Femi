@@ -157,6 +157,28 @@ export function PackFilm() {
       {/* min-h-screen alongside svh: a browser that does not know svh would
           fall back to auto and collapse the stage to nothing. */}
       <div className="sticky top-0 h-[100svh] min-h-screen w-full overflow-hidden">
+        {/*
+          A sharp still under the film. The cuts are a few megabytes, and
+          without this the screen is empty cream until enough of one has
+          arrived to decode a frame. Two files because the two cuts are
+          different shapes; together they are about 110 KB.
+        */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size
+            decorative stills; next/image would only add indirection. */}
+        <img
+          src="/film/pack-tall-poster.webp"
+          alt=""
+          aria-hidden
+          className="film-feather absolute top-1/2 left-0 h-auto w-full -translate-y-1/2 lg:hidden"
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element -- as above. */}
+        <img
+          src="/film/pack-wide-poster.webp"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 hidden h-full w-full object-cover lg:block"
+        />
+
         <video
           ref={videoRef}
           muted
