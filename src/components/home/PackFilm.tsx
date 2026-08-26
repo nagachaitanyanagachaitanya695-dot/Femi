@@ -35,35 +35,50 @@ export function PackFilm() {
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef(0);
   const targetRef = useRef(0);
-  const easeRef = useRef(0);
+  const seekingRef = useRef(false);
+  const seekStartRef = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  const FPS = 60; // must match the encoded cuts
   const FILM_END = 0.88; // film finishes a little before the section does
   const TITLE_OUT = 0.12; // opening words clear by here
   const ACTIONS_IN = 0.74;
   const ACTIONS_FULL = 0.9;
 
   /**
-   * Chases the scroll target instead of jumping to it.
+   * Moves the film to where the scroll says, at the rate the decoder can
+   * actually manage.
    *
-   * Scroll events arrive in coarse jumps, especially from a wheel or a flung
-   * thumb, and following them exactly makes the film step. Easing toward the
-   * target each frame turns those jumps into a glide. The loop stops itself
-   * once it has arrived, so it is not burning frames while the page sits
-   * still.
+   * Every write to currentTime is a seek, and a seek is a decode with real
+   * latency — around 10ms on a desktop CPU, several times that on a phone's
+   * hardware decoder. An earlier version eased toward the target on every
+   * animation frame, which issued about 150 seeks for a two-second scroll;
+   * they queued up faster than they could finish and the film fell steadily
+   * further behind the thumb. That was the lag.
+   *
+   * So: never start a seek while one is in flight — just remember where we
+   * want to be and go there once the last one lands — and snap the target to
+   * a real frame, since seeking between frames decodes a picture identical to
+   * the one already on screen. Together these cap the work at what the device
+   * can do, and the decoder's own latency does the smoothing the easing was
+   * trying to add.
    */
-  const ease = useCallback(() => {
-    easeRef.current = 0;
+  const pump = useCallback(() => {
     const video = videoRef.current;
     if (!video?.duration) return;
 
-    const distance = targetRef.current - video.currentTime;
-    if (Math.abs(distance) < 0.004) {
-      video.currentTime = targetRef.current;
-      return;
-    }
-    video.currentTime += distance * 0.16;
-    easeRef.current = requestAnimationFrame(ease);
+    // A seek that never reports back would freeze the film for good.
+    if (seekingRef.current && performance.now() - seekStartRef.current < 500) return;
+
+    const step = 1 / FPS;
+    const wanted = Math.round(targetRef.current / step) * step;
+    if (Math.abs(video.currentTime - wanted) < step / 2) return;
+
+    seekingRef.current = true;
+    seekStartRef.current = performance.now();
+    // Every frame is a keyframe, so fastSeek is exact here as well as cheaper.
+    if (typeof video.fastSeek === "function") video.fastSeek(wanted);
+    else video.currentTime = wanted;
   }, []);
 
   const onScroll = useCallback(() => {
@@ -81,7 +96,7 @@ export function PackFilm() {
       const video = videoRef.current;
       if (video?.duration) {
         targetRef.current = Math.min(progress / FILM_END, 1) * video.duration;
-        if (!easeRef.current) easeRef.current = requestAnimationFrame(ease);
+        pump();
       }
 
       // Written straight to the DOM: this runs on every frame of a scroll, and
@@ -104,7 +119,7 @@ export function PackFilm() {
         actions.style.pointerEvents = now > 0.6 ? "auto" : "none";
       }
     });
-  }, [ease]);
+  }, [pump]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -119,6 +134,12 @@ export function PackFilm() {
         },
         { once: true },
       );
+      // Release the lock as each seek lands, then go straight to wherever the
+      // scroll has moved to in the meantime.
+      video.addEventListener("seeked", () => {
+        seekingRef.current = false;
+        pump();
+      });
     }
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -141,9 +162,8 @@ export function PackFilm() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      if (easeRef.current) cancelAnimationFrame(easeRef.current);
     };
-  }, [onScroll]);
+  }, [onScroll, pump]);
 
   return (
     <section
