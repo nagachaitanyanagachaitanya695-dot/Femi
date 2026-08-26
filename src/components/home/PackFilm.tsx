@@ -40,7 +40,7 @@ export function PackFilm() {
   const seekStartRef = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const FPS = 24; // must match the encoded cuts
+  const FPS = 48; // must match the encoded cuts
   const FILM_END = 0.88; // film finishes a little before the section does
   const TITLE_OUT = 0.12; // opening words clear by here
   const ACTIONS_IN = 0.74;

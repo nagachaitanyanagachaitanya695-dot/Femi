@@ -86,7 +86,7 @@ insert into public.products (
     677, 549, null, null,
     array['Ultra-thin, soft cotton-finish top sheet', 'Breathable back sheet', 'Leak guards along both edges', 'Wings with a secure adhesive grip', 'Individually wrapped for travel', 'One sealed pack of each size', 'Covers a full cycle, day and night', 'Free delivery'],
     94, 4.9, 508, 85, true, 'Most loved',
-    '{"base": "#F0A9BE", "band": "#F7DDE5", "tab": "#B03A62", "ink": "#4A1526"}'::jsonb
+    '{"base": "#EFAF1E", "band": "#7FC241", "tab": "#155E63", "ink": "#123B3E"}'::jsonb
   );
 
 on conflict (id) do update set

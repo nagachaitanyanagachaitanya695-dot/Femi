@@ -11,7 +11,14 @@ import type { Category, Product } from "./types";
 const YELLOW = { base: "#F3B21B", band: "#7FC241", tab: "#1F5132", ink: "#231404" };
 const NAVY = { base: "#F6C223", band: "#8CC63F", tab: "#232E77", ink: "#232E77" };
 const PLUM = { base: "#E7A81A", band: "#7FC241", tab: "#4A1F2B", ink: "#3A1B10" };
-const ROSE = { base: "#F0A9BE", band: "#F7DDE5", tab: "#B03A62", ink: "#4A1526" };
+/**
+ * Every Femi pack is the same gold foil with a green technology band; only the
+ * tab colour changes between lines. An earlier ROSE here was pink through and
+ * through — base, band and tab — which made the value pack look like a product
+ * that does not exist. Teal keeps it in the family while staying distinct from
+ * the green, navy and plum tabs above.
+ */
+const TEAL = { base: "#EFAF1E", band: "#7FC241", tab: "#155E63", ink: "#123B3E" };
 
 export const categories: Category[] = [
   {
@@ -36,7 +43,7 @@ export const categories: Category[] = [
     slug: "value-packs",
     name: "Value packs",
     blurb: "Combos and multi-packs at a better price per pad.",
-    theme: ROSE,
+    theme: TEAL,
   },
 ];
 
@@ -214,7 +221,7 @@ export const products: Product[] = [
     stock: 85,
     active: true,
     badge: "Most loved",
-    theme: ROSE,
+    theme: TEAL,
   },
 ];
 

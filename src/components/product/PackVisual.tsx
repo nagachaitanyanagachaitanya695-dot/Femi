@@ -25,24 +25,53 @@ export function PackVisual({
       className={className}
     >
       <defs>
+        {/*
+          The real pack is a gold foil pouch, not a flat card: it catches a
+          highlight down one side, bulges in the middle, and is crimped along
+          the top and bottom seals. These build that up in layers.
+        */}
         <linearGradient id={`${id}-base`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={theme.base} stopOpacity="1" />
-          <stop offset="65%" stopColor={theme.base} stopOpacity="1" />
-          <stop offset="100%" stopColor={theme.base} stopOpacity="0.82" />
+          <stop offset="0%" stopColor={theme.base} stopOpacity="0.9" />
+          <stop offset="18%" stopColor={theme.base} stopOpacity="1" />
+          <stop offset="72%" stopColor={theme.base} stopOpacity="1" />
+          <stop offset="100%" stopColor={theme.tab} stopOpacity="0.28" />
         </linearGradient>
-        <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0.35" />
-          <stop offset="45%" stopColor="#fff" stopOpacity="0" />
+
+        {/* Volume: brightest just left of centre, falling away to the edges. */}
+        <radialGradient id={`${id}-pillow`} cx="38%" cy="42%" r="72%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.30" />
+          <stop offset="55%" stopColor="#fff" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0.14" />
+        </radialGradient>
+
+        {/* A single specular streak across the foil. */}
+        <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="1" y2="0.6">
+          <stop offset="18%" stopColor="#fff" stopOpacity="0" />
+          <stop offset="30%" stopColor="#fff" stopOpacity="0.34" />
+          <stop offset="38%" stopColor="#fff" stopOpacity="0.05" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
+
+        <linearGradient id={`${id}-pad`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#dfdad2" />
+          <stop offset="16%" stopColor="#fff" />
+          <stop offset="82%" stopColor="#fff" />
+          <stop offset="100%" stopColor="#d8d2c9" />
+        </linearGradient>
+
+        <filter id={`${id}-drop`} x="-20%" y="-20%" width="140%" height="150%">
+          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor={theme.tab} floodOpacity="0.28" />
+        </filter>
+
         <clipPath id={`${id}-clip`}>
           <rect x="8" y="14" width="304" height="192" rx="14" />
         </clipPath>
       </defs>
 
       {/* soft ground shadow */}
-      <ellipse cx="160" cy="210" rx="120" ry="9" fill={theme.tab} opacity="0.14" />
+      <ellipse cx="160" cy="211" rx="118" ry="8" fill={theme.tab} opacity="0.18" />
 
-      <g clipPath={`url(#${id}-clip)`}>
+      <g clipPath={`url(#${id}-clip)`} filter={`url(#${id}-drop)`}>
         <rect x="8" y="14" width="304" height="192" fill={`url(#${id}-base)`} />
 
         {/* technology band */}
@@ -108,11 +137,20 @@ export function PackVisual({
         <g transform="translate(202 112) scale(0.62)">
           <path
             d="M0 -78 C16 -78 19 -50 19 -24 C19 0 19 22 19 50 C19 74 14 81 0 81 C-14 81 -19 74 -19 50 C-19 22 -19 0 -19 -24 C-19 -50 -16 -78 0 -78 Z"
-            fill="#ffffff"
+            fill={`url(#${id}-pad)`}
           />
-          <path d="M-18 -16 C-42 -24 -52 -3 -36 11 C-28 17 -21 13 -18 8 Z" fill="#ffffff" />
-          <path d="M18 -16 C42 -24 52 -3 36 11 C28 17 21 13 18 8 Z" fill="#ffffff" />
+          <path d="M-18 -16 C-42 -24 -52 -3 -36 11 C-28 17 -21 13 -18 8 Z" fill="#f4f1ec" />
+          <path d="M18 -16 C42 -24 52 -3 36 11 C28 17 21 13 18 8 Z" fill="#f4f1ec" />
+          {/* embossed contour and the soft centre channel */}
+          <path
+            d="M0 -70 C11 -70 13 -48 13 -24 C13 2 13 24 13 48 C13 68 10 74 0 74 C-10 74 -13 68 -13 48 C-13 24 -13 2 -13 -24 C-13 -48 -11 -70 0 -70 Z"
+            fill="none"
+            stroke="#c9c2b8"
+            strokeOpacity="0.55"
+            strokeWidth="1.6"
+          />
           <rect x="-9" y="-18" width="18" height="40" rx="4" fill="#cfe8a8" />
+          <rect x="-9" y="-18" width="18" height="40" rx="4" fill="none" stroke="#a9cd7c" strokeOpacity="0.7" strokeWidth="1" />
         </g>
 
         {/* vertical script on the tab */}
@@ -131,7 +169,20 @@ export function PackVisual({
           everyday
         </text>
 
+        <rect x="8" y="14" width="304" height="192" fill={`url(#${id}-pillow)`} />
         <rect x="8" y="14" width="304" height="192" fill={`url(#${id}-sheen)`} />
+
+        {/* crimped top and bottom seals, as on the real pouch */}
+        <g stroke="#000" strokeOpacity="0.16" strokeWidth="1.2">
+          {Array.from({ length: 38 }, (_, i) => 10 + i * 8).map((x) => (
+            <line key={`t${x}`} x1={x} y1="14" x2={x} y2="24" />
+          ))}
+          {Array.from({ length: 38 }, (_, i) => 10 + i * 8).map((x) => (
+            <line key={`b${x}`} x1={x} y1="196" x2={x} y2="206" />
+          ))}
+        </g>
+        <rect x="8" y="14" width="304" height="10" fill="#fff" opacity="0.14" />
+        <rect x="8" y="196" width="304" height="10" fill="#000" opacity="0.08" />
       </g>
 
       <rect
